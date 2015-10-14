@@ -15,7 +15,10 @@ CREATE TABLE IF NOT EXISTS zipkin.service_name_index (
     trace_id          bigint,
     PRIMARY KEY ((service_name, bucket), ts)
 ) WITH CLUSTERING ORDER BY (ts DESC)
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.DateTieredCompactionStrategy', 'max_sstable_age_days': '1'};
+    AND compaction = {
+        'class': 'org.apache.cassandra.db.compaction.DateTieredCompactionStrategy',
+        'max_sstable_age_days': '1',
+        'unchecked_tombstone_compaction': 'true'};
 
 CREATE TABLE IF NOT EXISTS zipkin.span_names (
     service_name text,
@@ -31,7 +34,10 @@ CREATE TABLE IF NOT EXISTS zipkin.annotations_index (
     trace_id       bigint,
     PRIMARY KEY ((annotation, bucket), ts)
 ) WITH CLUSTERING ORDER BY (ts DESC)
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.DateTieredCompactionStrategy', 'max_sstable_age_days': '1'};
+    AND compaction = {
+        'class': 'org.apache.cassandra.db.compaction.DateTieredCompactionStrategy',
+        'max_sstable_age_days': '1',
+        'unchecked_tombstone_compaction': 'true'};
 
 CREATE TABLE IF NOT EXISTS zipkin.dependencies (
     day          timestamp,
@@ -50,4 +56,7 @@ CREATE TABLE IF NOT EXISTS zipkin.traces (
     span_name text,
     span      blob,
     PRIMARY KEY (trace_id, ts, span_name)
-) WITH compaction = {'class': 'org.apache.cassandra.db.compaction.DateTieredCompactionStrategy', 'max_sstable_age_days': '1'};
+) WITH compaction = {
+        'class': 'org.apache.cassandra.db.compaction.DateTieredCompactionStrategy',
+        'max_sstable_age_days': '1',
+        'unchecked_tombstone_compaction': 'true'};
