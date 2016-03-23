@@ -1,6 +1,7 @@
 package com.twitter.zipkin.query
 
 import com.fasterxml.jackson.core.`type`.TypeReference
+import com.twitter.conversions.time._
 import com.twitter.finagle.http.{Fields, Request}
 import com.twitter.finagle.tracing.SpanId
 import com.twitter.finatra.annotations.Flag
@@ -34,11 +35,13 @@ class ZipkinQueryController @Inject()(spanStore: SpanStore,
   }
 
   get("/config.json") { request: Request =>
-    response.ok(Map(
+    val resp = response.ok(Map(
       "environment" -> environment,
       "queryLimit" -> queryLimit,
       "defaultLookback" -> defaultLookback
     )).contentType("application/json")
+    resp.cacheControl = 10.minutes
+    resp
   }
 
   post("/api/v1/spans") { request: Request =>
@@ -111,10 +114,17 @@ class ZipkinQueryController @Inject()(spanStore: SpanStore,
   }
 
   get("/:*") { request: Request =>
-    response.ok.fileOrIndex(
-    request.params("*"),
-    "index.html"
+    val resp = response.ok.fileOrIndex(
+      request.params("*"),
+      "index.html"
     )
+    // We need a short max-age on index.html so that users don't need to flush the cache
+    // to see a new version of zipkin.
+    //
+    // We set a long max-age on other resources, knowing they are all hashed paths. Any
+    // update to index.html will include links to new hashed paths, orphaning the former.
+    resp.cacheControl = if (request.path.contains("index.html")) 1.minute else 365.days
+    resp
   }
 
   val jsonSpansReader = ZipkinJson.readerFor(new TypeReference[Seq[JsonSpan]] {})
